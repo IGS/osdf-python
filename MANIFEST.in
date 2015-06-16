@@ -1,0 +1,6 @@
+include README
+include README.md
+include osdf.py
+include request.py
+include setup.cfg
+include setup.py
