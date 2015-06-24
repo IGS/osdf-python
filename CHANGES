@@ -1,3 +1,9 @@
+osdf-python 0.2.1
+
+ * Corrected issue with property get/set not being honored.
+
+ - Victor <victor73@github.com>  Tue, 23 Jun 2015 12:00:00 -0400
+
 osdf-python 0.2
 
  * Added properties to redefine connection parameters
