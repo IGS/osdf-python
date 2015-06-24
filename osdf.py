@@ -88,6 +88,16 @@ class OSDF(object):
             else:
                 raise Exception("Unable to edit node document.")
 
+    def _byteify(self, input):
+        if isinstance(input, dict):
+            return {self._byteify(key):self._byteify(value) for key,value in input.iteritems()}
+        elif isinstance(input, list):
+            return [self._byteify(element) for element in input]
+        elif isinstance(input, unicode):
+            return input.encode('utf-8')
+        else:
+            return input
+
     def get_info(self):
         """
         Retrieve's the OSDF server's information/contact document
@@ -95,6 +105,8 @@ class OSDF(object):
         osdf_response = self._request.get("/info")
 
         info = json.loads( osdf_response['content'] )
+
+        info = self._byteify(info)
 
         return info
 
@@ -118,6 +130,8 @@ class OSDF(object):
             raise Exception(msg)
 
         data = json.loads( osdf_response['content'] )
+
+        data = self._byteify(data)
 
         return data
 
@@ -144,6 +158,8 @@ class OSDF(object):
 
         schema_data = json.loads( osdf_response['content'] )
 
+        schema_data = self._byteify(schema_data)
+
         return schema_data
 
     def get_aux_schema(self, namespace, aux_schema_name):
@@ -168,6 +184,8 @@ class OSDF(object):
             raise Exception(msg)
 
         aux_schema_data = json.loads( osdf_response['content'] )
+
+        aux_schema_data = self._byteify(aux_schema_data)
 
         return aux_schema_data
 
@@ -266,6 +284,8 @@ class OSDF(object):
             raise Exception(msg)
 
         data = json.loads( osdf_response['content'] )
+
+        data = self._byteify(data)
 
         return data
 

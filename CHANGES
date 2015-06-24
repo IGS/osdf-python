@@ -1,3 +1,9 @@
+osdf-python 0.2.3
+
+ * Ensuring unicode is converted to ascii str
+
+ - Victor <victor73@github.com>  Wed, 24 Jun 2015 12:00:00 -0400
+
 osdf-python 0.2.2
 
  * Correct check for wrong HTTP status code on deletes.
