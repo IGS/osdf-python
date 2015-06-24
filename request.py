@@ -29,6 +29,7 @@ class HttpRequest(object):
         resp = conn.getresponse()
         content = resp.read()
 
+        headers = {}
         raw_headers = resp.getheaders()
 
         for header in raw_headers:

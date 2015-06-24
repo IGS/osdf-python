@@ -205,7 +205,9 @@ class OSDF(object):
         """
         osdf_response = self._request.delete("/nodes/" + node_id)
 
-        if osdf_response['code'] != 200:
+        headers = osdf_response["headers"]
+
+        if osdf_response['code'] != 204:
             if 'x-osdf-error' in headers:
                 msg = "Unable to delete node document. Reason: " + headers['x-osdf-error']
             else:
