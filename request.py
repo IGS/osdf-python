@@ -12,7 +12,7 @@ class HTTPStatusException(Exception):
     def __str__(self):
         return "Error [%s]: %s" % (self.status, self.message)
 
-class HttpRequest:
+class HttpRequest(object):
 
     def __init__(self, server, username, password, port=8123):
         self.server = server

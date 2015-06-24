@@ -7,62 +7,62 @@ import os
 import sys
 from request import HttpRequest
 
-class OSDF:
+class OSDF(object):
     """
     Communicates with an OSDF server's REST interface to facilitate several
     operations (node creation, deletion, queries, etc.)
     """
 
     def __init__(self, server, username, password, port=8123):
-        self.server = server
-        self.port = port
-        self.username = username
-        self.password = password
+        self._server = server
+        self._port = port
+        self._username = username
+        self._password = password
         self._request = HttpRequest(server, username, password, port=port)
 
     @property
     def server(self):
-        return self.server
+        return self._server
 
     @server.setter
     def server(self, server):
-        self.server = server
+        self._server = server
         # Redefine the request object
-        self._request = HttpRequest(self.server, self.username,
-                                    self.password, self.port)
+        self._request = HttpRequest(self._server, self._username,
+                                    self._password, self._port)
 
     @property
     def port(self):
-        return self.port
+        return self._port
 
-    @server.setter
+    @port.setter
     def port(self, port):
-        self.port = port
+        self._port = port
         # Redefine the request object
-        self._request = HttpRequest(self.server, self.username,
-                                    self.password, self.port)
+        self._request = HttpRequest(self._server, self._username,
+                                    self._password, self._port)
 
     @property
     def username(self):
-        return self.username
+        return self._username
 
     @username.setter
     def username(self, username):
-        self.username = username
+        self._username = username
         # Redefine the request object
-        self._request = HttpRequest(self.server, self.username,
-                                    self.password, self.port)
+        self._request = HttpRequest(self._server, self._username,
+                                    self._password, self._port)
 
     @property
     def password(self):
-        return self.password
+        return self._password
 
     @password.setter
-    def username(self, username):
-        self.password = password
+    def password(self, password):
+        self._password = password
         # Redefine the request object
-        self._request = HttpRequest(self.server, self.username,
-                                    self.password, self.port)
+        self._request = HttpRequest(self._server, self._username,
+                                    self._password, self._port)
 
     def edit_node(self, json_data):
         """
