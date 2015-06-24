@@ -1,0 +1,12 @@
+osdf-python 0.2
+
+ * Added properties to redefine connection parameters
+   (server, port, username, password).
+
+ - Victor <victor73@github.com>  Tue, 23 Jun 2015 12:00:00 -0400
+
+osdf-python 0.1
+
+ * Initial release
+
+ - Victor <victor73@github.com>  Wed, 17 Jun 2015 12:00:00 -0400
