@@ -20,6 +20,50 @@ class OSDF:
         self.password = password
         self._request = HttpRequest(server, username, password, port=port)
 
+    @property
+    def server(self):
+        return self.server
+
+    @server.setter
+    def server(self, server):
+        self.server = server
+        # Redefine the request object
+        self._request = HttpRequest(self.server, self.username,
+                                    self.password, self.port)
+
+    @property
+    def port(self):
+        return self.port
+
+    @server.setter
+    def port(self, port):
+        self.port = port
+        # Redefine the request object
+        self._request = HttpRequest(self.server, self.username,
+                                    self.password, self.port)
+
+    @property
+    def username(self):
+        return self.username
+
+    @username.setter
+    def username(self, username):
+        self.username = username
+        # Redefine the request object
+        self._request = HttpRequest(self.server, self.username,
+                                    self.password, self.port)
+
+    @property
+    def password(self):
+        return self.password
+
+    @password.setter
+    def username(self, username):
+        self.password = password
+        # Redefine the request object
+        self._request = HttpRequest(self.server, self.username,
+                                    self.password, self.port)
+
     def edit_node(self, json_data):
         """
         Updates a node with the provided data
