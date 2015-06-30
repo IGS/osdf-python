@@ -80,13 +80,7 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-
-            if 'x-osdf-error' in headers:
-                msg = "Unable to edit node document. Reason: " \
-                      + headers['x-osdf-error']
-                raise Exception(msg)
-            else:
-                raise Exception("Unable to edit node document.")
+            self.header_error(headers, 'edit', 'node')
 
     def _byteify(self, input):
         if isinstance(input, dict):
@@ -120,14 +114,7 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-
-            if 'x-osdf-error' in headers:
-                msg = "Unable to retrieve node document. Reason: " \
-                      + headers['x-osdf-error']
-            else:
-                msg = "Unable to retrieve node document."
-
-            raise Exception(msg)
+            self.header_error(headers, 'retrieve', 'node')
 
         data = json.loads( osdf_response['content'] )
 
@@ -147,14 +134,7 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-
-            if 'x-osdf-error' in headers:
-                msg = "Unable to retrieve schema document. Reason: " \
-                      + headers['x-osdf-error']
-            else:
-                msg = "Unable to retrieve schema document."
-
-            raise Exception(msg)
+            self.header_error(headers, 'retrieve', 'schema')
 
         schema_data = json.loads( osdf_response['content'] )
 
@@ -174,14 +154,7 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-
-            if 'x-osdf-error' in headers:
-                msg = "Unable to retrieve schema document. Reason: " \
-                      + headers['x-osdf-error']
-            else:
-                msg = "Unable to retrieve schema document."
-
-            raise Exception(msg)
+            self.header_error(headers, 'retrieve', 'schema')
 
         aux_schema_data = json.loads( osdf_response['content'] )
 
@@ -223,15 +196,9 @@ class OSDF(object):
         """
         osdf_response = self._request.delete("/nodes/" + node_id)
 
-        headers = osdf_response["headers"]
-
         if osdf_response['code'] != 204:
-            if 'x-osdf-error' in headers:
-                msg = "Unable to delete node document. Reason: " + headers['x-osdf-error']
-            else:
-                msg = "Unable to delete node document."
-
-            raise Exception(msg)
+            headers = osdf_response['headers']
+            self.header_error(headers, 'delete', 'node')
 
     def validate_node(self, json_data):
         """
@@ -323,3 +290,15 @@ class OSDF(object):
                       'node_type': node_type }
 
         return node_json
+
+    def header_error(self, heades=[], method_type='retrieve',
+            document_type=None):
+        if 'x-osdf-error' in headers:
+            msg = "Unable to %s %s document. Reason: %s" \
+                % (method_type, document_type, headers['x-osdf-error'])
+        else:
+            msg = "Unable to %s %s document." \
+                % (method_type, document_type)
+
+        raise Exception(msg)
+
