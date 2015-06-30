@@ -1,3 +1,9 @@
+osdf-python 0.2.4
+
+ * Merge of code to reduce duplication by cometsong@github
+
+ - Victor <victor73@github.com>  Tue, 30 Jun 2015 11:14:00 -0400
+
 osdf-python 0.2.3
 
  * Ensuring unicode is converted to ascii str
