@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import unittest
+import os
 from osdf import OSDF
 
 def _get_osdf():
@@ -8,9 +9,20 @@ def _get_osdf():
     return osdf
 
 class OsdfTest(unittest.TestCase):
-    server = "osdf-devel.igs.umaryland.edu"
-    username = "test"
-    password = "test"
+    if "OSDF_SERVER" in os.environ:
+        server = os.environ.get("OSDF_SERVER")
+    else:
+        raise Exception("Must define OSDF_SERVER environment variable.")
+
+    if "OSDF_USER" in os.environ:
+        username = os.environ.get("OSDF_USER")
+    else:
+        raise Exception("Must define OSDF_USER environment variable.")
+
+    if "OSDF_PASSWD" in os.environ:
+        password = os.environ.get("OSDF_PASSWD")
+    else:
+        raise Exception("Must define OSDF_PASSWD environment variable.")
 
     test_node = {
                   "ns": "test",
