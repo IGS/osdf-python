@@ -228,6 +228,31 @@ class OSDF(object):
 
         return (valid, error_msg)
 
+    def oql_query(self, namespace, query, page=1):
+        """
+        Issue an OSDF Query Language (OQL) query against OSDF.
+
+        Returns the specified page of results.
+        """
+        url = "/nodes/oql/%s/page/%s" % (namespace, str(page))
+
+        osdf_response = self._request.post(url, query)
+
+        if osdf_response["code"] != 200 and osdf_response["code"] != 206:
+            headers = osdf_response["headers"]
+
+            if 'x-osdf-error' in headers:
+                msg = "Unable to query namespace %s. Reason: %s" % (namespace, headers['x-osdf-error'])
+            else:
+                msg = "Unable to query namespace."
+
+            raise Exception(msg)
+
+        data = json.loads( osdf_response['content'] )
+
+        data = self._byteify(data)
+
+        return data
 
     def query(self, namespace, query, page=1):
         """
@@ -255,6 +280,33 @@ class OSDF(object):
         data = self._byteify(data)
 
         return data
+
+    def oql_query_all_pages(self, namespace, query):
+        """
+        Issue an OSDF Query Language (OQL) query against OSDF, as in the
+        oql_query() method, but retrieves ALL results by aggregating all
+        the available pages of results. Use with caution, as this may
+        consume a lot of memory with large result sets.
+        """
+        more_results = True
+        page = 1
+        cumulative_results = []
+
+        while more_results:
+           results = self.oql_query(namespace, query, page)
+
+           cumulative_results.extend(results['results'])
+
+           if results['result_count'] > 0:
+               page += 1
+           else:
+               more_results = False
+
+        results['results'] = cumulative_results
+        results['result_count'] = len(results['results'])
+        del results['page']
+
+        return results;
 
     def query_all_pages(self, namespace, query):
         """
@@ -291,7 +343,7 @@ class OSDF(object):
 
         return node_json
 
-    def header_error(self, heades=[], method_type='retrieve',
+    def header_error(self, headers=[], method_type='retrieve',
             document_type=None):
         if 'x-osdf-error' in headers:
             msg = "Unable to %s %s document. Reason: %s" \
