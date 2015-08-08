@@ -1,3 +1,5 @@
+[![PyPI version](https://img.shields.io/pypi/v/osdf-python.svg)](https://pypi.python.org/pypi/osdf-python)
+
 # osdf-python
 
     import pprint
