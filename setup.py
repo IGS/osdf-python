@@ -8,7 +8,7 @@ def read(fname):
 setup(name='osdf-python',
       description='Python client to Open Science Data Framework (OSDF) REST servers.',
       long_description=read('README.md'),
-      version='0.3.0',
+      version='0.3.1',
       py_modules=['osdf', 'request'],
       author='Victor Felix',
       author_email='victor73@github.com',

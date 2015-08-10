@@ -1,3 +1,9 @@
+osdf-python 0.3.1
+
+ * Added missing LICENSE file.
+
+ - Victor <victor73@github.com>  Mon, 10 Aug 2015 15:09:00 -0400
+
 osdf-python 0.3.0
 
  * Added methods to perform OSDF Query Language (OQL) queries:
