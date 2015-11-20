@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+try:
+    import http.client as httplib
+except ImportError:
+    import httplib
 import base64
-import httplib
 import json
 import os
 import sys

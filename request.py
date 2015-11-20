@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import httplib
+try:
+    import http.client as httplib
+except ImportError:
+    import httplib
 import base64
 
 class HTTPStatusException(Exception):
