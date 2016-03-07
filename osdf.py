@@ -13,12 +13,18 @@ class OSDF(object):
     operations (node creation, deletion, queries, etc.)
     """
 
-    def __init__(self, server, username, password, port=8123):
+    def __init__(self, server, username, password, port=8123, ssl=False):
         self._server = server
         self._port = port
         self._username = username
         self._password = password
-        self._request = HttpRequest(server, username, password, port=port)
+        self._ssl = ssl
+        self._set_request()
+
+    def _set_request(self):
+        self._request = HttpRequest(self._server, self._username,
+                                    self._password, self._port,
+                                    self._ssl)
 
     @property
     def server(self):
@@ -28,8 +34,7 @@ class OSDF(object):
     def server(self, server):
         self._server = server
         # Redefine the request object
-        self._request = HttpRequest(self._server, self._username,
-                                    self._password, self._port)
+        self._set_request()
 
     @property
     def port(self):
@@ -39,8 +44,7 @@ class OSDF(object):
     def port(self, port):
         self._port = port
         # Redefine the request object
-        self._request = HttpRequest(self._server, self._username,
-                                    self._password, self._port)
+        self._set_request()
 
     @property
     def username(self):
@@ -50,8 +54,7 @@ class OSDF(object):
     def username(self, username):
         self._username = username
         # Redefine the request object
-        self._request = HttpRequest(self._server, self._username,
-                                    self._password, self._port)
+        self._set_request()
 
     @property
     def password(self):
@@ -61,8 +64,20 @@ class OSDF(object):
     def password(self, password):
         self._password = password
         # Redefine the request object
-        self._request = HttpRequest(self._server, self._username,
-                                    self._password, self._port)
+        self._set_request()
+
+    @property
+    def ssl(self):
+        return self._ssl
+
+    @ssl.setter
+    def ssl(self, ssl):
+        if type(ssl) is not bool:
+            raise ValueError("Invalid value for ssl.")
+
+        self._ssl = ssl
+        # Redefine the request object
+        self._set_request()
 
     def edit_node(self, json_data):
         """
@@ -122,6 +137,43 @@ class OSDF(object):
 
         return data
 
+    def get_node_by_version(self, node_id, version):
+        """
+        Given a numerical version number, retrieves an OSDF node's data
+        as it was at that version.
+
+        Returns the parsed form of the JSON document for the node
+        """
+        osdf_response = self._request.get("/nodes/%s/ver/%s", (node_id, version))
+
+        if osdf_response["code"] != 200:
+            headers = osdf_response['headers']
+            self.header_error(headers, 'retrieve', 'node')
+
+        data = json.loads( osdf_response['content'] )
+
+        data = self._byteify(data)
+
+        return data
+
+    def get_schemas(self, namespace):
+        """
+        Retrieves all of the schemas for a particular namespace.
+        """
+        url = '/namespaces/%s/schemas/' % namespace
+
+        osdf_response = self._request.get(url)
+
+        if osdf_response["code"] != 200:
+            headers = osdf_response['headers']
+            self.header_error(headers, 'retrieve', 'schemas')
+
+        all_schema_data = json.loads( osdf_response['content'] )
+
+        schema_data = self._byteify(all_schema_data)
+
+        return all_schema_data
+
     def get_schema(self, namespace, schema_name):
         """
         Retrieves a namespace's document schema
@@ -154,7 +206,7 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'schema')
+            self.header_error(headers, 'retrieve', 'aux schema')
 
         aux_schema_data = json.loads( osdf_response['content'] )
 

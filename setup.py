@@ -7,8 +7,14 @@ def read(fname):
 
 setup(name='osdf-python',
       description='Python client to Open Science Data Framework (OSDF) REST servers.',
-      long_description=read('README.md'),
-      version='0.3.1',
+      long_description='The Open Science Data Framework (OSDF) is a specialized ' + \
+                       'document database that allows users to store, retrieve, ' + \
+                       'query and track changes to data over time easily. ' + \
+                       'Because the API uses JSON and REST, developers are ' + \
+                       'able to use OSDF in the language of their choice ' + \
+                       'because almost every language has support for ' + \
+                       'communications via HTTP and working with JSON.'
+      version='0.4',
       py_modules=['osdf', 'request'],
       author='Victor Felix',
       author_email='victor73@github.com',
