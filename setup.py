@@ -13,7 +13,7 @@ setup(name='osdf-python',
                        'Because the API uses JSON and REST, developers are ' + \
                        'able to use OSDF in the language of their choice ' + \
                        'because almost every language has support for ' + \
-                       'communications via HTTP and working with JSON.'
+                       'communications via HTTP and working with JSON.',
       version='0.5',
       py_modules=['osdf', 'request'],
       author='Victor Felix',
