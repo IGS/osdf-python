@@ -137,6 +137,43 @@ class OSDF(object):
 
         return data
 
+    def get_nodes_in(self, node_id):
+        """
+        Retrieves the nodes that link to the OSDF node identified by the
+        given the node ID.
+
+        """
+        url = "/nodes/{}/in".format(node_id)
+        osdf_response = self._request.get(url)
+
+        if osdf_response["code"] != 200:
+            headers = osdf_response['headers']
+            self.header_error(headers, 'retrieve', 'node')
+
+        data = json.loads( osdf_response['content'] )
+
+        data = self._byteify(data)
+
+        return data
+
+    def get_nodes_out(self, node_id):
+        """
+        Retrieves the OSDF nodes that the given node links to (via it's linkage
+        field).
+        """
+        url = "/nodes/{}/out".format(node_id)
+        osdf_response = self._request.get(url)
+
+        if osdf_response["code"] != 200:
+            headers = osdf_response['headers']
+            self.header_error(headers, 'retrieve', 'node')
+
+        data = json.loads( osdf_response['content'] )
+
+        data = self._byteify(data)
+
+        return data
+
     def get_node_by_version(self, node_id, version):
         """
         Given a numerical version number, retrieves an OSDF node's data

@@ -1,3 +1,10 @@
+osdf-python 0.5
+
+ * Added methods for retrieving the nodes connecting to 
+   and from a node identified by a particular node ID.
+
+ - Victor <victor73@github.com>  Thu, 05 May 2016 16:00:00 -0400
+
 osdf-python 0.4
 
  * Supports SSL encrypted connections to secured OSDF instances.
