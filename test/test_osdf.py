@@ -35,49 +35,6 @@ class OsdfTest(unittest.TestCase):
                   }
               }
 
-    def testGetInfo(self):
-        osdf = _get_osdf()
-
-        info = None
-
-        try:
-            info = osdf.get_info()
-        except:
-            pass
-
-        self.assertIsNotNone(info, "Information retrieved is not null.")
-
-        self.assertTrue(type(info) == dict)
-
-        self.assertTrue('description' in info)
-        self.assertTrue('title' in info)
-
-        self.assertTrue('admin_contact_email1' in info)
-        self.assertTrue('admin_contact_email2' in info)
-
-        self.assertTrue('technical_contact1' in info)
-        self.assertTrue('technical_contact2' in info)
-
-
-    def testOqlQuery(self):
-        osdf = _get_osdf()
-
-        query = '"project"[node_type]'
-        namespace = "test"
-
-        results = osdf.oql_query(namespace, query)
-
-        self._examine_paged_results(results, "OQL")
-
-    def testOqlQueryAllPages(self):
-        osdf = _get_osdf()
-
-        query = '"project"[node_type]'
-        namespace = "test"
-
-        results = osdf.oql_query_all_pages(namespace, query)
-        self._examine_all_results(results, "OQL")
-
     def _examine_all_results(self, results, search_type):
         self.assertIsNotNone(results, "%s query result is not None." % search_type)
 
@@ -103,35 +60,85 @@ class OsdfTest(unittest.TestCase):
         self.assertTrue('page' in results,
                         "%s result contains 'page' key." % search_type)
 
-    def testQuery(self):
-        osdf = _get_osdf()
 
-        query = '{ "term" : { "node_type" : "project" }}'
-        namespace = "test"
-
-        results = osdf.query(namespace, query)
-
-        self._examine_paged_results(results, "ES QueryDSL")
-
-    def testInsertNode(self):
-
+    def testDeleteNode(self):
         osdf = _get_osdf()
 
         exception_thrown = False;
-        node_id = None
+        node_id = osdf.insert_node(OsdfTest.test_node)
 
         try:
-            node_id = osdf.insert_node(OsdfTest.test_node)
+            osdf.delete_node(node_id)
+        except Exception as e:
+            exception_thrown = True
+
+        # Check that the deletion did not raise an exception
+        self.assertFalse(exception_thrown);
+
+        # Now verify that the deletion actually work. A node
+        # retrieval on that node ID should faile...
+        get_success = True
+        try:
+            osdf.get_node(node_id)
+        except Exception as e:
+            get_success = False
+
+        self.assertFalse(get_success, "Deletion persisted in OSDF.")
+
+    def testGetInfo(self):
+        osdf = _get_osdf()
+
+        info = None
+
+        try:
+            info = osdf.get_info()
+        except:
+            pass
+
+        self.assertIsNotNone(info, "Information retrieved is not null.")
+
+        self.assertTrue(type(info) == dict)
+
+        self.assertTrue('description' in info)
+        self.assertTrue('title' in info)
+
+        self.assertTrue('admin_contact_email1' in info)
+        self.assertTrue('admin_contact_email2' in info)
+
+        self.assertTrue('technical_contact1' in info)
+        self.assertTrue('technical_contact2' in info)
+
+    def testEditNode(self):
+        osdf = _get_osdf()
+
+        exception_thrown = False;
+
+        node_id = osdf.insert_node(OsdfTest.test_node)
+
+        edited_node = OsdfTest.test_node
+        edited_node['id'] = node_id
+        edited_node['ver'] = 1
+        edited_node['meta']['color'] = "violet"
+
+        try:
+            osdf.edit_node(edited_node)
         except Exception as e:
             print(e)
             exception_thrown = True
 
-        # Check that the insertion did not raise an exception
+        # Check that the edit did not raise an exception
         self.assertFalse(exception_thrown);
-        self.assertIsNotNone(node_id,
-                        "Node ID for inserted data is not None.")
-        self.assertTrue(type(node_id) == str,
-                        "Node ID for inserted data is a string.")
+
+        # Check that the edit operation actually worked by
+        # re-retrieving it and looking for the alteration
+        retrieved = osdf.get_node(node_id)
+
+        self.assertTrue("color" in retrieved["meta"] and
+                        retrieved['meta']['color'] == "violet",
+                        "Edit operation successfully persisted.")
+
+        # Cleanup by deleting this document
+        osdf.delete_node(node_id)
 
     def testGetNode(self):
         osdf = _get_osdf()
@@ -172,34 +179,115 @@ class OsdfTest(unittest.TestCase):
             # particular test
             pass
 
-    def testDeleteNode(self):
+    def testInsertNode(self):
         osdf = _get_osdf()
 
         exception_thrown = False;
-        node_id = osdf.insert_node(OsdfTest.test_node)
+        node_id = None
 
         try:
-            osdf.delete_node(node_id)
+            node_id = osdf.insert_node(OsdfTest.test_node)
         except Exception as e:
             exception_thrown = True
 
-        # Check that the deletion did not raise an exception
+        # Check that the insertion did not raise an exception
         self.assertFalse(exception_thrown);
 
-        # Now verify that the deletion actually work. A node
-        # retrieval on that node ID should faile...
-        get_success = True
-        try:
-            osdf.get_node(node_id)
-        except Exception as e:
-            get_success = False
+        self.assertIsNotNone(node_id,
+                        "Node ID for inserted data is not None.")
 
-        self.assertFalse(get_success, "Deletion persisted in OSDF.")
+        self.assertTrue(type(node_id) == str,
+                        "Node ID for inserted data is a string.")
+
+    def testOqlQuery(self):
+        osdf = _get_osdf()
+
+        query = '"project"[node_type]'
+        namespace = "test"
+
+        results = osdf.oql_query(namespace, query)
+
+        self._examine_paged_results(results, "OQL")
+
+    def testOqlQueryAllPages(self):
+        osdf = _get_osdf()
+
+        query = '"project"[node_type]'
+        namespace = "test"
+
+        results = osdf.oql_query_all_pages(namespace, query)
+        self._examine_all_results(results, "OQL")
+
+
+    def testValidateNode(self):
+        osdf = _get_osdf()
+
+        data = "blah"
+
+        (is_valid, err_message) = osdf.validate_node(data)
+
+        self.assertFalse(is_valid, "Validity check flagged bad data.")
+
+        self.assertIsNotNone(err_message, "Error message is not None.")
+
+        (is_valid, err_message) = osdf.validate_node(OsdfTest.test_node)
+
+        self.assertTrue(is_valid, "Validity check passed valid data.")
+
+        self.assertIsNone(err_message, "Error message is None for passed validation.")
+
+
+    def testRetrieveSchema(self):
+        osdf = _get_osdf()
+        namespace = "test"
+        schema_name = "example"
+
+        exception_thrown = False;
+        schema = None
+
+        try:
+            schema = osdf.get_schema(namespace, schema_name)
+        except Exception as e:
+            exception_thrown = True
+
+        # Check that the retrieval did not raise an exception
+        self.assertFalse(exception_thrown);
+
+        # Check that the returned value contains data
+        self.assertIsNotNone(schema, "Schema retrieval yielded a result.")
+
+    def testRetrieveAllSchemas(self):
+        osdf = _get_osdf()
+        namespace = "test"
+
+        exception_thrown = False;
+
+        try:
+            schemas = osdf.get_schemas(namespace)
+        except Exception as e:
+            exception_thrown = True
+
+        # Check that the retrieval did not raise an exception
+        self.assertFalse(exception_thrown);
+
+        # Check that the returned value contains data
+        self.assertIsNotNone(schemas, "Retrieval of all schemas yielded results.")
+
+
+    def testQuery(self):
+        osdf = _get_osdf()
+
+        query = '{ "query": { "term" : { "node_type" : "project" }} }'
+        namespace = "test"
+
+        results = osdf.query(namespace, query)
+
+        self._examine_paged_results(results, "ES QueryDSL")
 
     def testQueryAllPages(self):
         osdf = _get_osdf()
 
-        query = '{ "term" : { "node_type" : "project" }}'
+        query = '{ "query": { "term" : { "node_type" : "project" }}}'
         namespace = "test"
 
         results = osdf.query_all_pages(namespace, query)

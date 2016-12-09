@@ -14,14 +14,23 @@ class HTTPStatusException(Exception):
 
 class HttpRequest(object):
 
-    def __init__(self, server, username, password, port=8123):
+    def __init__(self, server, username, password, port=8123, ssl=False):
         self.server = server
         self.port = port
         self.username = username
         self.password = password
+        self.ssl = ssl
+
+    def _get_connection(self):
+        if (self.ssl):
+           conn = httplib.HTTPSConnection(self.server, self.port)
+        else:
+           conn = httplib.HTTPConnection(self.server, self.port)
+
+        return conn
 
     def delete(self, resource):
-        conn = httplib.HTTPConnection(self.server, self.port)
+        conn = self._get_connection()
 
         conn.putrequest("DELETE", resource)
         self._set_auth_header(conn)
@@ -45,7 +54,7 @@ class HttpRequest(object):
         return results
 
     def get(self, resource):
-        conn = httplib.HTTPConnection(self.server, self.port)
+        conn = self._get_connection()
         conn.putrequest("GET", resource)
         self._set_auth_header(conn)
         conn.endheaders()
@@ -68,7 +77,7 @@ class HttpRequest(object):
         return results
 
     def put(self, resource, data):
-        conn = httplib.HTTPConnection(self.server, self.port, True)
+        conn = self._get_connection()
         conn.putrequest("PUT", resource)
         self._set_auth_header(conn)
         conn.putheader("Content-Length", "%d" % len(data))
@@ -95,7 +104,7 @@ class HttpRequest(object):
         return results
 
     def post(self, resource, data):
-        conn = httplib.HTTPConnection(self.server, self.port, True)
+        conn = self._get_connection()
 
         conn.putrequest("POST", resource)
         self._set_auth_header(conn)

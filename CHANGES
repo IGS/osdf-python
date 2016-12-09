@@ -1,3 +1,20 @@
+osdf-python 0.5
+
+ * Added methods for retrieving the nodes connecting to 
+   and from a node identified by a particular node ID.
+
+ - Victor <victor73@github.com>  Thu, 05 May 2016 16:00:00 -0400
+
+osdf-python 0.4
+
+ * Supports SSL encrypted connections to secured OSDF instances.
+ * Added method for complete schema retrieval for a namespace.
+ * Able to retrieve previous version of node documents.
+ * Improved README documentation.
+ * More tests.
+
+ - Victor <victor73@github.com>  Mon, 07 Mar 2016 16:00:00 -0400
+
 osdf-python 0.3.1
 
  * Added missing LICENSE file.
