@@ -1,5 +1,6 @@
 import os
-from distutils.core import setup
+
+from setuptools import setup
 
 # Utility function to read files. Used for the long_description.
 def read(fname):
