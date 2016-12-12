@@ -231,6 +231,26 @@ class OSDF(object):
 
         return schema_data
 
+    def get_aux_schemas(self, namespace):
+        """
+        Retrieves all of the auxiliary schemas for a particular namespace.
+
+        Returns the parsed form of the auxiliary schemas.
+        """
+        url = '/namespaces/%s/schemas/aux/' % (namespace)
+
+        osdf_response = self._request.get(url)
+
+        if osdf_response["code"] != 200:
+            headers = osdf_response['headers']
+            self.header_error(headers, 'retrieve', 'aux schemas')
+
+        aux_schema_data = json.loads( osdf_response['content'] )
+
+        aux_schema_data = self._byteify(aux_schema_data)
+
+        return aux_schema_data
+
     def get_aux_schema(self, namespace, aux_schema_name):
         """
         Retrieves an auxiliary schema
