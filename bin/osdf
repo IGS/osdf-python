@@ -1,0 +1,397 @@
+#!/usr/bin/env python
+
+import argparse
+import json
+from jsondiff import diff
+import logging
+import os
+import sys
+from osdf import OSDF
+
+def parse_config():
+    """
+    Parses the utility's configuration file, which is in INI format and
+    returns a tuple containing the configured server/IP address, username,
+    password, and whether SSL is required, in that order.
+    """
+    home = os.path.expanduser("~")
+    config_file = os.path.join(home, ".osdf")
+
+    perms = oct(os.stat(config_file).st_mode & 0777)
+    if perms != '0400':
+        msg = "Permissions on config {} are too loose. Should be 0400."
+        raise Exception(msg.format(config_file))
+
+    import ConfigParser
+
+    config = ConfigParser.RawConfigParser()
+    config.read(config_file)
+    section = "osdf"
+
+    server = config.get(section, 'server')
+    username = config.get(section, 'username')
+    password = config.get(section, 'password')
+    ssl = config.getboolean(section, "ssl")
+
+    return (server, username, password, ssl)
+    
+def get_client():
+    """
+    Creates and retrieves an OSDF object that is used as the client for all
+    communications with the OSDF server.
+    """
+    (server, username, password, ssl) = parse_config()
+
+    client = OSDF(server, username, password, ssl=ssl)
+
+    return client
+
+def init(args):
+    """
+    The function that is first used to establish the utility's configuration
+    file. We honor interrupts since this is an interactive process where we
+    ask the user several questions.
+    """
+    try:
+        init_helper(args)
+    except KeyboardInterrupt:
+        print("\nAborted\n.")
+        sys.exit(0)
+
+def init_helper(args):
+    """
+    Utility function called by init(). Asks the user several questions,
+    including a password and confirmation. If the process is successful, the
+    configuration file is created and a restrictive set of permissions applied.
+    We also take care to notify the user if they are possibliy overwriting
+    an existing configuration file.
+    """
+    home = os.path.expanduser("~")
+    config_file = os.path.join(home, ".osdf")
+
+    if os.path.isfile(config_file):
+        replace = raw_input("You have an existing ~/.osdf file. " + \
+                            "Do you want to overwrite it?\n")
+        if (replace.lower() == "yes" or replace.lower() == "y"):
+            pass
+        else:
+            # Stop everything...
+            sys.exit(0)
+
+    # Get the server
+    server = ""
+    while len(server) == 0:
+        server = raw_input("What is the hostname or IP address of " + \
+                           "the OSDF server?\n")
+    # Get the username
+    username = ""
+    while len(username) == 0:
+        username = raw_input("What is your OSDF username?\n")
+
+    # Get the password (twice) and compare
+    password = ""
+    password2 = ""
+    while len(password) == 0 or password != password2:
+        import getpass
+
+        print("What is your OSDF password? (masked)")
+        password = getpass.getpass('')
+
+        print("Enter the password a 2nd time (masked)")
+        password2 = getpass.getpass('')
+
+        if password != password2:
+            print("Passwords did not match. Please try again...")
+
+    ssl_answer = ""
+    while len(ssl_answer) == 0:
+        ssl_answer = raw_input("Is the OSDF server using SSL/TLS?\n")
+
+    if (ssl_answer.lower() == "yes" or ssl_answer.lower() == "y"):
+        ssl = True
+    else:
+        ssl = False
+
+    if os.path.isfile(config_file):
+        os.chmod(config_file, 0600)
+
+    fh = open(config_file, "w")
+    fh.write("[osdf]\n")
+    fh.write("server={}\n".format(server))
+    fh.write("username={}\n".format(username))
+    fh.write("password={}\n".format(password))
+    fh.write("ssl={}\n".format(ssl))
+    fh.close()
+
+    # Set the permissions so that only this user can read the file.
+    os.chmod(config_file, 0400)
+
+def edit(args):
+    """
+    Edit a node. First, we take the provided node ID and retrieve the document
+    from the OSDF server. Then we save it to a temporary location and invoke
+    a text editor (honoring the EDITOR environment variable, if set) on it.
+    We then examine the edited document, and if there are changes, and the
+    document is well-formed and valid, we attempt to update the node in the
+    OSDF server.
+    """
+    node_id = args.node
+
+    import subprocess
+    import tempfile
+
+    # Get the editor that the user prefers by way of the EDITOR environment
+    # variable. If that's not available, just default to vim.
+    editor = os.environ.get('EDITOR', 'vim')
+
+    try:
+        client = get_client()
+        data = client.get_node(node_id)
+        json_doc = json.dumps(data, indent=2)
+    except Exception as e:
+        sys.stderr.write("Unable to retrieve node \"{}\".\n".format(node_id))
+        sys.exit(1)
+
+    temp = tempfile.NamedTemporaryFile(suffix=".tmp")
+
+    temp.write(json_doc)
+    temp.flush()
+    subprocess.call([editor, temp.name])
+
+    # Okay, the editor has completed, so now we have a new document
+    temp.seek(0)
+    new_data = temp.read()
+
+    new_node = None
+    try:
+        new_node = json.loads(new_data)
+    except:
+        print("Aborted. Edited data resulted in invalid JSON.")
+        sys.exit(2)
+
+    exit_value = 1
+    difference  = diff(data, new_node)
+
+    if difference:
+        new_node = json.loads(new_data)
+        (valid, error) = client.validate_node(new_node)
+
+        if valid:
+            print("New data is valid.")
+            exit_value = 0
+        else:
+            print("New node information is invalid: {}".format(error))
+    else:
+        print("No edits detected.")
+        exit_value = 0
+
+    sys.exit(exit_value)
+
+def info(args):
+    """
+    Retrieves basic information about the OSDF server published by the API.
+    This is sometimes useful as a check to see if the server is running or
+    not.
+    """
+    exit_value = 1
+
+    try:
+        client = get_client()
+        info = client.get_info()
+        print(json.dumps(info, indent=2, sort_keys=True))
+        exit_value = 0
+    except Exception as e:
+        sys.stderr.write("Unable to retrieve information: {}\n".format(e))
+
+    sys.exit(exit_value)
+
+def aux_schemas(args):
+    """
+    Retrieves auxiliary schema information from the OSDF server. When only the
+    namespace is provided, all the auxiliary schemas are output.  Results can
+    be limited to a specific auxiliary schema when an additional argument
+    specifying the name is provided.
+    """
+    namespace = args.ns
+    aux_schema = args.aux_schema
+
+    client = get_client()
+
+    if aux_schema:
+        # Here we are retrieving a specific auxiliary schema by name
+        try:
+            data = client.get_aux_schema(namespace, aux_schema)
+        except Exception as e:
+            msg = "Unable to retrieve {} aux schema \"{}\".\n"
+            sys.stderr.write(msg.format(namespace, aux_schema))
+            sys.exit(1)
+    else:
+        # Here we are retrieving all auxiliary schemas for the namespace
+        try:
+            data = client.get_aux_schemas(namespace)
+        except Exception as e:
+            msg = "Unable to retrieve {} aux schemas. Reason: {}\n"
+            sys.stderr.write(msg.format(namespace, e))
+            sys.exit(1)
+
+    print(json.dumps(data, indent=2, sort_keys=True))
+
+def schemas(args):
+    """
+    Retrieves base schema information from the OSDF server. Base schemas
+    control the structure of OSDF node types. When only the namespace is
+    provided, all the base schemas are output, however, results can be limited
+    to a specific schema when an additional argument specifying the name is
+    provided.
+    """
+    namespace = args.ns
+    schema = args.schema
+
+    client = get_client()
+
+    if schema:
+        # Here we are retrieving a specific schema by name
+        try:
+            data = client.get_schema(namespace, schema)
+        except Exception as e:
+            msg = "Unable to retrieve {} schema \"{}.\"\n"
+            sys.stderr.write(msg.format(namespace, schema))
+            sys.exit(1)
+    else:
+        # Here we are retrieving all the schemas for the namespace
+        try:
+            data = client.get_schemas(namespace)
+        except Exception as e:
+            msg = "Unable to retrieve {} schemas. Reason: {}\n"
+            sys.stderr.write(msg.format(namespace, e))
+            sys.exit(1)
+
+    print(json.dumps(data, indent=2, sort_keys=True))
+
+def oql(args):
+    """
+    Given an OQL (OSDF Query Language) query statement, send it to the
+    configured OSDF server and send the results to STDOUT.
+    """
+    query = args.query
+    namespace = args.ns
+
+    try:
+        client = get_client()
+        data = client.oql_query(namespace, query)
+        print(json.dumps(data, indent=2, sort_keys=True))
+    except Exception as e:
+        msg = "Unable to execute OQL \"{}\". Reason: {}\n"
+        sys.stderr.write(msg.format(query, e))
+        sys.exit(1)
+
+def search(args):
+    """
+    Given an OSDF query expressed in ElasticSearch query format, send it to the
+    configured OSDF server and send the results to STDOUT.
+    """
+    query = args.query
+    namespace = args.ns
+
+    try:
+        client = get_client()
+        data = client.query(namespace, query)
+        print(json.dumps(data, indent=2, sort_keys=True))
+    except Exception as e:
+        msg = "Unable to execute query \"{}\". Reason: {}\n"
+        sys.stderr.write(msg.format(query, e))
+        sys.exit(1)
+
+def cat(args):
+    """
+    Given a node ID, retrieve the data and dump it to STDOUT, much like the
+    unix `cat` utility operates.
+    """
+    # TODO: Honor multiple node IDs?
+    node_id = args.node
+
+    try:
+        client = get_client()
+        data = client.get_node(node_id)
+        print(json.dumps(data, indent=2, sort_keys=True))
+    except Exception as e:
+        sys.stderr.write("Unable to retrieve node \"{}\".\n".format(node_id))
+        sys.exit(1)
+
+def delete(args):
+    """
+    Deletes the specified node from the OSDF server. This is a irreversible
+    operation, so use caution.
+    """
+    node_id = args.node
+
+    try:
+        client = get_client()
+        client.delete_node(node_id)
+    except Exception as e:
+        sys.stderr.write("Unable to delete node \"{}\".\n".format(node_id))
+        sys.exit(1)
+
+def main():
+    # Create the top-level parser
+    parser = argparse.ArgumentParser(prog='osdf')
+
+    subparsers = parser.add_subparsers(help='sub-command help')
+
+    # Create the parser for the "b" command
+    parser_init = subparsers.add_parser('init', help='Initialize settings.')
+    parser_init.set_defaults(func=init)
+
+    # Create the parser for the "cat" command
+    parser_cat = subparsers.add_parser('cat', help='Dump a node to STDOUT.')
+    parser_cat.add_argument('node', type=str, help='A node ID.')
+    parser_cat.set_defaults(func=cat)
+
+    parser_info = subparsers.add_parser('info',
+                  help='Display information about the OSDF server.')
+    parser_info.set_defaults(func=info)
+
+    # Create the parser for the node deletion command
+    parser_del = subparsers.add_parser('rm', help='Delete a node.')
+    parser_del.add_argument('node', type=str, help='The node ID to delete.')
+    parser_del.set_defaults(func=delete)
+
+    # Create the parser for OQL (OSDF Query Language) querying.
+    parser_oql = subparsers.add_parser('oql', help='Perform an OQL query.')
+    parser_oql.add_argument('ns', type=str, help='The OSDF namespace to search.')
+    parser_oql.add_argument('query', type=str, help='The OQL query statement.')
+    parser_oql.set_defaults(func=oql)
+
+    # Create the parser for ES (ElasticSearch Query DSL) querying.
+    parser_dsl = subparsers.add_parser('search',
+                                       help='Perform an ElasticSearch DSL query.')
+    parser_dsl.add_argument('ns', type=str, help='The OSDF namespace to search.')
+    parser_dsl.add_argument('query', type=str, help='The query statement.')
+    parser_dsl.set_defaults(func=search)
+
+    # Create the parser for schema retrieval.
+    parser_schemas = subparsers.add_parser('schemas',
+                     help='Retrieve the schemas for a namespace.')
+    parser_schemas.add_argument('ns', type=str, help='The OSDF namespace.')
+    parser_schemas.add_argument('schema', nargs='?', type=str,
+                                help='A specific schema to retrieve.')
+    parser_schemas.set_defaults(func=schemas)
+
+    # Create the parser for auxiliary schema retrieval.
+    parser_aux = subparsers.add_parser('aux',
+                 help='Retrieve the auxiliary schemas for a namespace.')
+    parser_aux.add_argument('ns', type=str, help='The OSDF namespace.')
+    parser_aux.add_argument('aux_schema', nargs='?', type=str,
+                            help='A specific auxiliary schema to retrieve.')
+    parser_aux.set_defaults(func=aux_schemas)
+
+    # Create the parser for the "edit" command
+    parser_edit = subparsers.add_parser('edit', help='Edit a node.')
+    parser_edit.add_argument('node', type=str, help='The node ID to edit.')
+    parser_edit.set_defaults(func=edit)
+
+    # parse the args and call whatever function was selected
+    args = parser.parse_args()
+    args.func(args)
+
+main()

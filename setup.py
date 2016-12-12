@@ -20,7 +20,10 @@ setup(name='osdf-python',
       author_email='victor73@github.com',
       url='http://osdf.igs.umaryland.edu',
       license='MIT',
-      install_requires=['httplib', 'jsondiff'],
+      install_requires=['jsondiff'],
+      scripts = [
+          'bin/osdf'
+      ],
       classifiers=[
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: MIT License",
