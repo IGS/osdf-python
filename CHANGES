@@ -1,3 +1,10 @@
+osdf-python 0.6
+
+ * Added method to retrieve all auxiliary schemas.
+ * New utility script for easier CLI usage of OSDF servers.
+
+ - Victor <victor73@github.com>  Mon, 12 Dec 2016 10:30:00 -0400
+
 osdf-python 0.5
 
  * Added methods for retrieving the nodes connecting to 
