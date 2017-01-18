@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env/python
 
 import argparse
 import json
@@ -16,6 +16,10 @@ def parse_config():
     """
     home = os.path.expanduser("~")
     config_file = os.path.join(home, ".osdf")
+
+    if not os.path.isfile(config_file):
+        sys.stderr.write("No configuration file. Please execute 'osdf init'.\n")
+        sys.exit(1)
 
     perms = oct(os.stat(config_file).st_mode & 0777)
     if perms != '0400':
@@ -309,14 +313,33 @@ def cat(args):
     """
     # TODO: Honor multiple node IDs?
     node_id = args.node
+    version = args.version
 
-    try:
-        client = get_client()
-        data = client.get_node(node_id)
-        print(json.dumps(data, indent=2, sort_keys=True))
-    except Exception as e:
-        sys.stderr.write("Unable to retrieve node \"{}\".\n".format(node_id))
-        sys.exit(1)
+    def node_getter(node_id, version):
+        data = None
+
+        try:
+            client = get_client()
+
+            if version is None:
+                data = client.get_node(node_id)
+            else:
+                data = client.get_node_by_version(node_id, version)
+        except Exception as e:
+            if version is not None:
+                msg = "Unable to retrieve node \"{}\" version {}.\n"
+                sys.stderr.write(msg.format(node_id, version))
+            else:
+                msg = "Unable to retrieve node \"{}\".\n"
+                sys.stderr.write(msg.format(node_id))
+
+            sys.exit(1)
+
+        return data;
+
+    data = node_getter(node_id, version)
+    
+    print(json.dumps(data, indent=2, sort_keys=True))
 
 def delete(args):
     """
@@ -345,6 +368,9 @@ def main():
     # Create the parser for the "cat" command
     parser_cat = subparsers.add_parser('cat', help='Dump a node to STDOUT.')
     parser_cat.add_argument('node', type=str, help='A node ID.')
+    parser_cat.add_argument('-v', '--version', type=str,
+                            help="Specify a specific version of the node to retrieve. " +
+                                 "Defaults to the latest version if not provided.")
     parser_cat.set_defaults(func=cat)
 
     parser_info = subparsers.add_parser('info',
