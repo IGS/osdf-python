@@ -1,3 +1,10 @@
+osdf-python 0.6.1
+
+ * Better error message when an invocation is attempted without
+   having run 'init' first.
+
+ - Victor <victor73@github.com>  Sat, 17 Dec 2016 10:30:00 -0400
+
 osdf-python 0.6
 
  * Added method to retrieve all auxiliary schemas.
