@@ -15,7 +15,7 @@ setup(name='osdf-python',
                        'able to use OSDF in the language of their choice ' + \
                        'because almost every language has support for ' + \
                        'communications via HTTP and working with JSON.',
-      version='0.6.1',
+      version='0.7',
       py_modules=['osdf', 'request'],
       author='Victor Felix',
       author_email='victor73@github.com',
