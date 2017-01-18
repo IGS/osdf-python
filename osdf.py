@@ -181,7 +181,7 @@ class OSDF(object):
 
         Returns the parsed form of the JSON document for the node
         """
-        osdf_response = self._request.get("/nodes/%s/ver/%s", (node_id, version))
+        osdf_response = self._request.get("/nodes/%s/ver/%s" % (node_id, version))
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
