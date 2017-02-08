@@ -1,4 +1,4 @@
-#!/usr/bin/env/python
+#!/export/working/virtualenv/osdf/bin/python2
 
 import argparse
 import json
@@ -279,10 +279,15 @@ def oql(args):
     """
     query = args.query
     namespace = args.ns
+    all_results = args.all
 
     try:
         client = get_client()
-        data = client.oql_query(namespace, query)
+        if all_results:
+            data = client.oql_query_all_pages(namespace, query)
+        else:
+            data = client.oql_query(namespace, query)
+
         print(json.dumps(data, indent=2, sort_keys=True))
     except Exception as e:
         msg = "Unable to execute OQL \"{}\". Reason: {}\n"
@@ -296,10 +301,15 @@ def search(args):
     """
     query = args.query
     namespace = args.ns
+    all_results = args.all
 
     try:
         client = get_client()
-        data = client.query(namespace, query)
+        if all_results:
+            data = client.query(namespace, query)
+        else:
+            data = client.query_all_pages(namespace, query)
+
         print(json.dumps(data, indent=2, sort_keys=True))
     except Exception as e:
         msg = "Unable to execute query \"{}\". Reason: {}\n"
@@ -386,6 +396,7 @@ def main():
     parser_oql = subparsers.add_parser('oql', help='Perform an OQL query.')
     parser_oql.add_argument('ns', type=str, help='The OSDF namespace to search.')
     parser_oql.add_argument('query', type=str, help='The OQL query statement.')
+    parser_oql.add_argument('-a', '--all', action='store_true', help='Return all results (no pagination).')
     parser_oql.set_defaults(func=oql)
 
     # Create the parser for ES (ElasticSearch Query DSL) querying.
@@ -393,6 +404,7 @@ def main():
                                        help='Perform an ElasticSearch DSL query.')
     parser_dsl.add_argument('ns', type=str, help='The OSDF namespace to search.')
     parser_dsl.add_argument('query', type=str, help='The query statement.')
+    parser_dsl.add_argument('-a', '--all', action='store_true', help='Return all results (no pagination).')
     parser_dsl.set_defaults(func=search)
 
     # Create the parser for schema retrieval.
