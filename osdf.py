@@ -311,7 +311,7 @@ class OSDF(object):
 
     def validate_node(self, json_data):
         """
-        Report whether a node document validates against OSDF and it's notion
+        Report whether a node document validates against OSDF and its notion
         of what that node should look like according to any registered schemas.
 
         Returns a tuple with the first value holding a boolean of whether the
