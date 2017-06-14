@@ -181,7 +181,8 @@ def edit(args):
         (valid, error) = client.validate_node(new_node)
 
         if valid:
-            print("New data is valid.")
+            client.edit_node(new_node)
+            print("Done.")
             exit_value = 0
         else:
             print("New node information is invalid: {}".format(error))
