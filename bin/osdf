@@ -1,11 +1,17 @@
-#!/export/working/virtualenv/osdf/bin/python2
+#!/usr/bin/env python
+
+"""
+Command-line utility for interacting with OSDF servers.
+"""
+
+#pylint:disable=broad-except
 
 import argparse
 import json
-from jsondiff import diff
-import logging
 import os
 import sys
+
+from jsondiff import diff
 from osdf import OSDF
 
 def parse_config():
@@ -22,6 +28,7 @@ def parse_config():
         sys.exit(1)
 
     perms = oct(os.stat(config_file).st_mode & 0777)
+
     if perms != '0400':
         msg = "Permissions on config {} are too loose. Should be 0400."
         raise Exception(msg.format(config_file))
@@ -38,7 +45,7 @@ def parse_config():
     ssl = config.getboolean(section, "ssl")
 
     return (server, username, password, ssl)
-    
+
 def get_client():
     """
     Creates and retrieves an OSDF object that is used as the client for all
@@ -56,13 +63,14 @@ def init(args):
     file. We honor interrupts since this is an interactive process where we
     ask the user several questions.
     """
+    #pylint:disable=unused-argument
     try:
-        init_helper(args)
+        init_helper()
     except KeyboardInterrupt:
         print("\nAborted\n.")
         sys.exit(0)
 
-def init_helper(args):
+def init_helper():
     """
     Utility function called by init(). Asks the user several questions,
     including a password and confirmation. If the process is successful, the
@@ -84,18 +92,18 @@ def init_helper(args):
 
     # Get the server
     server = ""
-    while len(server) == 0:
+    while not server:
         server = raw_input("What is the hostname or IP address of " + \
                            "the OSDF server?\n")
     # Get the username
     username = ""
-    while len(username) == 0:
+    while not username:
         username = raw_input("What is your OSDF username?\n")
 
     # Get the password (twice) and compare
     password = ""
     password2 = ""
-    while len(password) == 0 or password != password2:
+    while not password or password != password2:
         import getpass
 
         print("What is your OSDF password? (masked)")
@@ -108,7 +116,7 @@ def init_helper(args):
             print("Passwords did not match. Please try again...")
 
     ssl_answer = ""
-    while len(ssl_answer) == 0:
+    while not ssl_answer:
         ssl_answer = raw_input("Is the OSDF server using SSL/TLS?\n")
 
     if (ssl_answer.lower() == "yes" or ssl_answer.lower() == "y"):
@@ -152,7 +160,7 @@ def edit(args):
         client = get_client()
         data = client.get_node(node_id)
         json_doc = json.dumps(data, indent=2)
-    except Exception as e:
+    except Exception:
         sys.stderr.write("Unable to retrieve node \"{}\".\n".format(node_id))
         sys.exit(1)
 
@@ -169,12 +177,12 @@ def edit(args):
     new_node = None
     try:
         new_node = json.loads(new_data)
-    except:
+    except Exception:
         print("Aborted. Edited data resulted in invalid JSON.")
         sys.exit(2)
 
     exit_value = 1
-    difference  = diff(data, new_node)
+    difference = diff(data, new_node)
 
     if difference:
         new_node = json.loads(new_data)
@@ -198,12 +206,20 @@ def info(args):
     This is sometimes useful as a check to see if the server is running or
     not.
     """
+    #pylint:disable=unused-argument
+
     exit_value = 1
 
     try:
         client = get_client()
-        info = client.get_info()
-        print(json.dumps(info, indent=2, sort_keys=True))
+        info_data = client.get_info()
+        server = client.server
+        port = client.port
+
+        print("Server: {}:{}".format(server, port))
+        print("---------")
+        print(json.dumps(info_data, indent=2, sort_keys=True))
+
         exit_value = 0
     except Exception as e:
         sys.stderr.write("Unable to retrieve information: {}\n".format(e))
@@ -322,11 +338,13 @@ def cat(args):
     Given a node ID, retrieve the data and dump it to STDOUT, much like the
     unix `cat` utility operates.
     """
+    #pylint:disable=fixme
     # TODO: Honor multiple node IDs?
     node_id = args.node
     version = args.version
 
     def node_getter(node_id, version):
+        """ Fetches a node document. """
         data = None
 
         try:
@@ -336,7 +354,7 @@ def cat(args):
                 data = client.get_node(node_id)
             else:
                 data = client.get_node_by_version(node_id, version)
-        except Exception as e:
+        except Exception:
             if version is not None:
                 msg = "Unable to retrieve node \"{}\" version {}.\n"
                 sys.stderr.write(msg.format(node_id, version))
@@ -346,10 +364,10 @@ def cat(args):
 
             sys.exit(1)
 
-        return data;
+        return data
 
     data = node_getter(node_id, version)
-    
+
     print(json.dumps(data, indent=2, sort_keys=True))
 
 def delete(args):
@@ -362,11 +380,14 @@ def delete(args):
     try:
         client = get_client()
         client.delete_node(node_id)
-    except Exception as e:
+    except Exception:
         sys.stderr.write("Unable to delete node \"{}\".\n".format(node_id))
         sys.exit(1)
 
 def main():
+    """
+    The main execution function.
+    """
     # Create the top-level parser
     parser = argparse.ArgumentParser(prog='osdf')
 
@@ -379,13 +400,17 @@ def main():
     # Create the parser for the "cat" command
     parser_cat = subparsers.add_parser('cat', help='Dump a node to STDOUT.')
     parser_cat.add_argument('node', type=str, help='A node ID.')
-    parser_cat.add_argument('-v', '--version', type=str,
-                            help="Specify a specific version of the node to retrieve. " +
-                                 "Defaults to the latest version if not provided.")
+    parser_cat.add_argument(
+        '-v', '--version', type=str,
+        help="Specify a specific version of the node to retrieve. " + \
+             "Defaults to the latest version if not provided."
+    )
     parser_cat.set_defaults(func=cat)
 
-    parser_info = subparsers.add_parser('info',
-                  help='Display information about the OSDF server.')
+    parser_info = subparsers.add_parser(
+        'info',
+        help='Display information about the OSDF server.'
+    )
     parser_info.set_defaults(func=info)
 
     # Create the parser for the node deletion command
@@ -397,7 +422,11 @@ def main():
     parser_oql = subparsers.add_parser('oql', help='Perform an OQL query.')
     parser_oql.add_argument('ns', type=str, help='The OSDF namespace to search.')
     parser_oql.add_argument('query', type=str, help='The OQL query statement.')
-    parser_oql.add_argument('-a', '--all', action='store_true', help='Return all results (no pagination).')
+    parser_oql.add_argument(
+        '-a', '--all',
+        action='store_true',
+        help='Return all results (no pagination).'
+    )
     parser_oql.set_defaults(func=oql)
 
     # Create the parser for ES (ElasticSearch Query DSL) querying.
@@ -405,20 +434,28 @@ def main():
                                        help='Perform an ElasticSearch DSL query.')
     parser_dsl.add_argument('ns', type=str, help='The OSDF namespace to search.')
     parser_dsl.add_argument('query', type=str, help='The query statement.')
-    parser_dsl.add_argument('-a', '--all', action='store_true', help='Return all results (no pagination).')
+    parser_dsl.add_argument(
+        '-a', '--all',
+        action='store_true',
+        help='Return all results (no pagination).'
+    )
     parser_dsl.set_defaults(func=search)
 
     # Create the parser for schema retrieval.
-    parser_schemas = subparsers.add_parser('schemas',
-                     help='Retrieve the schemas for a namespace.')
+    parser_schemas = subparsers.add_parser(
+        'schemas',
+        help='Retrieve the schemas for a namespace.'
+    )
     parser_schemas.add_argument('ns', type=str, help='The OSDF namespace.')
     parser_schemas.add_argument('schema', nargs='?', type=str,
                                 help='A specific schema to retrieve.')
     parser_schemas.set_defaults(func=schemas)
 
     # Create the parser for auxiliary schema retrieval.
-    parser_aux = subparsers.add_parser('aux',
-                 help='Retrieve the auxiliary schemas for a namespace.')
+    parser_aux = subparsers.add_parser(
+        'aux',
+        help='Retrieve the auxiliary schemas for a namespace.'
+    )
     parser_aux.add_argument('ns', type=str, help='The OSDF namespace.')
     parser_aux.add_argument('aux_schema', nargs='?', type=str,
                             help='A specific auxiliary schema to retrieve.')

@@ -1,10 +1,8 @@
-#!/usr/bin/env python
+"""
+Python OSDF client module.
+"""
 
-import base64
-import httplib
 import json
-import os
-import sys
 from request import HttpRequest
 
 class OSDF(object):
@@ -28,6 +26,9 @@ class OSDF(object):
 
     @property
     def server(self):
+        """
+        Retrieve the server the client is configured for.
+        """
         return self._server
 
     @server.setter
@@ -38,6 +39,9 @@ class OSDF(object):
 
     @property
     def port(self):
+        """
+        Retrieve the TCP port for the client.
+        """
         return self._port
 
     @port.setter
@@ -48,6 +52,9 @@ class OSDF(object):
 
     @property
     def username(self):
+        """
+        Retrieve the username set for the client.
+        """
         return self._username
 
     @username.setter
@@ -58,6 +65,9 @@ class OSDF(object):
 
     @property
     def password(self):
+        """
+        Retrieve the password set for the client.
+        """
         return self._password
 
     @password.setter
@@ -68,11 +78,14 @@ class OSDF(object):
 
     @property
     def ssl(self):
+        """
+        Retrieve whether the client will use SSL or not.
+        """
         return self._ssl
 
     @ssl.setter
     def ssl(self, ssl):
-        if type(ssl) is not bool:
+        if not isinstance(ssl, bool):
             raise ValueError("Invalid value for ssl.")
 
         self._ssl = ssl
@@ -89,21 +102,22 @@ class OSDF(object):
 
         node_id = json_data['id']
 
-        json_str = json.dumps(json_data);
+        json_str = json.dumps(json_data)
 
         osdf_response = self._request.put("/nodes/" + node_id, json_str)
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'edit', 'node')
+            self._header_error(headers, 'edit', 'node')
 
-    def _byteify(self, input):
-        if isinstance(input, dict):
-            return {self._byteify(key):self._byteify(value) for key,value in input.iteritems()}
+    def _byteify(self, input_str):
+        #pylint: disable=no-else-return,undefined-variable
+        if isinstance(input_str, dict):
+            return {self._byteify(key):self._byteify(value) for key, value in input_str.iteritems()}
         elif isinstance(input, list):
-            return [self._byteify(element) for element in input]
+            return [self._byteify(element) for element in input_str]
         elif isinstance(input, unicode):
-            return input.encode('utf-8')
+            return input_str.encode('utf-8')
         else:
             return input
 
@@ -113,7 +127,7 @@ class OSDF(object):
         """
         osdf_response = self._request.get("/info")
 
-        info = json.loads( osdf_response['content'] )
+        info = json.loads(osdf_response['content'])
 
         info = self._byteify(info)
 
@@ -129,9 +143,9 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'node')
+            self._header_error(headers, 'retrieve', 'node')
 
-        data = json.loads( osdf_response['content'] )
+        data = json.loads(osdf_response['content'])
 
         data = self._byteify(data)
 
@@ -148,9 +162,9 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'node')
+            self._header_error(headers, 'retrieve', 'node')
 
-        data = json.loads( osdf_response['content'] )
+        data = json.loads(osdf_response['content'])
 
         data = self._byteify(data)
 
@@ -166,9 +180,9 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'node')
+            self._header_error(headers, 'retrieve', 'node')
 
-        data = json.loads( osdf_response['content'] )
+        data = json.loads(osdf_response['content'])
 
         data = self._byteify(data)
 
@@ -185,9 +199,9 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'node')
+            self._header_error(headers, 'retrieve', 'node')
 
-        data = json.loads( osdf_response['content'] )
+        data = json.loads(osdf_response['content'])
 
         data = self._byteify(data)
 
@@ -203,13 +217,13 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'schemas')
+            self._header_error(headers, 'retrieve', 'schemas')
 
-        all_schema_data = json.loads( osdf_response['content'] )
+        all_schema_data = json.loads(osdf_response['content'])
 
         schema_data = self._byteify(all_schema_data)
 
-        return all_schema_data
+        return schema_data
 
     def get_schema(self, namespace, schema_name):
         """
@@ -223,9 +237,9 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'schema')
+            self._header_error(headers, 'retrieve', 'schema')
 
-        schema_data = json.loads( osdf_response['content'] )
+        schema_data = json.loads(osdf_response['content'])
 
         schema_data = self._byteify(schema_data)
 
@@ -243,9 +257,9 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'aux schemas')
+            self._header_error(headers, 'retrieve', 'aux schemas')
 
-        aux_schema_data = json.loads( osdf_response['content'] )
+        aux_schema_data = json.loads(osdf_response['content'])
 
         aux_schema_data = self._byteify(aux_schema_data)
 
@@ -263,9 +277,9 @@ class OSDF(object):
 
         if osdf_response["code"] != 200:
             headers = osdf_response['headers']
-            self.header_error(headers, 'retrieve', 'aux schema')
+            self._header_error(headers, 'retrieve', 'aux schema')
 
-        aux_schema_data = json.loads( osdf_response['content'] )
+        aux_schema_data = json.loads(osdf_response['content'])
 
         aux_schema_data = self._byteify(aux_schema_data)
 
@@ -277,7 +291,7 @@ class OSDF(object):
 
         Returns the node ID upon successful insertion.
         """
-        json_str = json.dumps(json_data);
+        json_str = json.dumps(json_data)
 
         osdf_response = self._request.post("/nodes", json_str)
         node_id = None
@@ -307,7 +321,7 @@ class OSDF(object):
 
         if osdf_response['code'] != 204:
             headers = osdf_response['headers']
-            self.header_error(headers, 'delete', 'node')
+            self._header_error(headers, 'delete', 'node')
 
     def validate_node(self, json_data):
         """
@@ -318,7 +332,7 @@ class OSDF(object):
         document validated or not. The second value contains the error message
         if the document did not validate.
         """
-        json_str = json.dumps(json_data);
+        json_str = json.dumps(json_data)
         url = "/nodes/validate"
 
         osdf_response = self._request.post(url, json_str)
@@ -351,13 +365,14 @@ class OSDF(object):
             headers = osdf_response["headers"]
 
             if 'x-osdf-error' in headers:
-                msg = "Unable to query namespace %s. Reason: %s" % (namespace, headers['x-osdf-error'])
+                msg = "Unable to query namespace %s. Reason: %s" \
+                     % (namespace, headers['x-osdf-error'])
             else:
                 msg = "Unable to query namespace."
 
             raise Exception(msg)
 
-        data = json.loads( osdf_response['content'] )
+        data = json.loads(osdf_response['content'])
 
         data = self._byteify(data)
 
@@ -378,13 +393,14 @@ class OSDF(object):
             headers = osdf_response["headers"]
 
             if 'x-osdf-error' in headers:
-                msg = "Unable to query namespace %s. Reason: %s" % (namespace, headers['x-osdf-error'])
+                msg = "Unable to query namespace %s. Reason: %s" % \
+                    (namespace, headers['x-osdf-error'])
             else:
                 msg = "Unable to query namespace."
 
             raise Exception(msg)
 
-        data = json.loads( osdf_response['content'] )
+        data = json.loads(osdf_response['content'])
 
         data = self._byteify(data)
 
@@ -402,20 +418,20 @@ class OSDF(object):
         cumulative_results = []
 
         while more_results:
-           results = self.oql_query(namespace, query, page)
+            results = self.oql_query(namespace, query, page)
 
-           cumulative_results.extend(results['results'])
+            cumulative_results.extend(results['results'])
 
-           if results['result_count'] > 0:
-               page += 1
-           else:
-               more_results = False
+            if results['result_count'] > 0:
+                page += 1
+            else:
+                more_results = False
 
         results['results'] = cumulative_results
         results['result_count'] = len(results['results'])
         del results['page']
 
-        return results;
+        return results
 
     def query_all_pages(self, namespace, query):
         """
@@ -428,32 +444,47 @@ class OSDF(object):
         cumulative_results = []
 
         while more_results:
-           results = self.query(namespace, query, page)
+            results = self.query(namespace, query, page)
 
-           cumulative_results.extend(results['results'])
+            cumulative_results.extend(results['results'])
 
-           if results['result_count'] > 0:
-               page += 1
-           else:
-               more_results = False
+            if results['result_count'] > 0:
+                page += 1
+            else:
+                more_results = False
 
         results['results'] = cumulative_results
         results['result_count'] = len(results['results'])
         del results['page']
 
-        return results;
+        return results
 
-    def create_osdf_node(self, namespace, node_type, domain_json, linkage={}, read="all", write="all"):
-        node_json = { 'ns': namespace,
-                      'acl': { 'read': [ read ], 'write': [ write ] },
-                      'linkage': linkage,
-                      'meta': domain_json,
-                      'node_type': node_type }
+    def create_osdf_node(self, namespace, node_type, domain_json, linkage=None,
+                         read="all", write="all"):
+        """
+        Create an OSDF compliant skeletal node document.
+        """
+        if not linkage:
+            linkage = {}
+
+        node_json = {
+            'ns': namespace,
+            'acl': {'read': [read], 'write': [write]},
+            'linkage': linkage,
+            'meta': domain_json,
+            'node_type': node_type
+        }
 
         return node_json
 
-    def header_error(self, headers=[], method_type='retrieve',
-            document_type=None):
+    def _header_error(self, headers=None, method_type='retrieve',
+                      document_type=None):
+        """
+        Raise an exception, potentially using information from HTTP headers.
+        """
+        if not headers:
+            headers = []
+
         if 'x-osdf-error' in headers:
             msg = "Unable to %s %s document. Reason: %s" \
                 % (method_type, document_type, headers['x-osdf-error'])
@@ -462,4 +493,3 @@ class OSDF(object):
                 % (method_type, document_type)
 
         raise Exception(msg)
-

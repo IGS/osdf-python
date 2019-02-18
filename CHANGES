@@ -1,3 +1,11 @@
+osdf-python 0.8.1
+
+ * Added configuration files for editorconfig and pylint.
+ * More information provided when calling the "info" option.
+ * Cleaned up numerous issues identified via pylint.
+
+ - Victor <victor73@github.com>  Sun, 17 Feb 2019 16:00:00 -0400
+
 osdf-python 0.8
 
  * Fixed issue with editing of nodes with osdf utility.
@@ -28,7 +36,7 @@ osdf-python 0.6
 
 osdf-python 0.5
 
- * Added methods for retrieving the nodes connecting to 
+ * Added methods for retrieving the nodes connecting to
    and from a node identified by a particular node ID.
 
  - Victor <victor73@github.com>  Thu, 05 May 2016 16:00:00 -0400
