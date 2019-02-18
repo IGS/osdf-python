@@ -114,12 +114,12 @@ class OSDF(object):
         #pylint: disable=no-else-return,undefined-variable
         if isinstance(input_str, dict):
             return {self._byteify(key):self._byteify(value) for key, value in input_str.iteritems()}
-        elif isinstance(input, list):
+        elif isinstance(input_str, list):
             return [self._byteify(element) for element in input_str]
-        elif isinstance(input, unicode):
+        elif isinstance(input_str, unicode):
             return input_str.encode('utf-8')
         else:
-            return input
+            return input_str
 
     def get_info(self):
         """
